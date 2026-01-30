@@ -21,3 +21,5 @@ coverage/
 # Database
 generated
 prisma/data/
+prisma/migrations
+dev.db
