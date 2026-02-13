@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { authService } from './auth.service'
 
 export const authController = {
-  async signUp(req: Request, res: Response) {
+  async signUp(req: Request, res: Response): Promise<Response> {
     const { email, username, password } = req.body
     try {
       // Vérifier que les données sont complètes
@@ -22,16 +22,15 @@ export const authController = {
         token,
         user,
       })
-    } catch (error: any) {
-      if (error.message === 'EMAIL_ALREADY_USED') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'EMAIL_ALREADY_USED') {
         return res.status(409).json({ error: 'Email déjà utilisé' })
       }
-      console.error('Erreur lors de la connexion:', error)
       return res.status(500).json({ error: 'Erreur serveur' })
     }
   },
 
-  async signIn(req: Request, res: Response) {
+  async signIn(req: Request, res: Response): Promise<Response> {
     const { email, password } = req.body
 
     try {
@@ -48,13 +47,12 @@ export const authController = {
         token,
         user,
       })
-    } catch (error: any) {
-      if (error.message === 'INVALID_CREDENTIALS') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'INVALID_CREDENTIALS') {
         return res
           .status(401)
           .json({ error: 'Email ou mot de passe incorrect' })
       }
-      console.error('Erreur lors de la connexion:', error)
       return res.status(500).json({ error: 'Erreur serveur' })
     }
   },

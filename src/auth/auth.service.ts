@@ -3,7 +3,14 @@ import jwt from 'jsonwebtoken'
 import { authRepository } from './auth.repository'
 
 export const authService = {
-  async signUp(email: string, username: string, password: string) {
+  async signUp(
+    email: string,
+    username: string,
+    password: string,
+  ): Promise<{
+    user: { id: number; username: string; email: string }
+    token: string
+  }> {
     const mail = await authRepository.findUserByEmail(email)
 
     if (mail) {
@@ -31,7 +38,13 @@ export const authService = {
     return { user, token }
   },
 
-  async signIn(email: string, password: string) {
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<{
+    user: { id: number; username: string; email: string }
+    token: string
+  }> {
     // Vérifier que l'utilisateur existe
     const user = await authRepository.findUserByEmail(email)
 

@@ -1,10 +1,10 @@
-import {createServer} from "http";
-import {env} from "./env";
-import express from "express";
-import cors from "cors";
-import 'dotenv/config';
-import { authRouter } from "./auth/auth.route";
-import { cardRouter } from "./cards/card.route";
+import { createServer } from 'http'
+import { env } from './env'
+import express from 'express'
+import cors from 'cors'
+import 'dotenv/config'
+import { authRouter } from './auth/auth.route'
+import { cardRouter } from './cards/card.route'
 
 // Create Express app
 export const app = express()

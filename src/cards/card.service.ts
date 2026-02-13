@@ -1,7 +1,7 @@
-import { cardRepository } from './card.repository';
+import { cardRepository } from './card.repository'
 
 export const cardsService = {
-    async getCards() {
-        return await cardRepository.findCards();
-    }
-};
+  async getCards() {
+    return await cardRepository.findCards()
+  },
+}
