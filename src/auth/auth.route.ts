@@ -5,8 +5,8 @@ export const authRouter = Router()
 
 // POST /api/auth/sign-up
 // Accessible via POST /api/auth/sign-up
-authRouter.post('/sign-up', authController.signUp)
+authRouter.post('/', authController.signUp)
 
 // POST api/auth/sign-in
 // Accessible via POST api/auth/sign-in
-authRouter.post('/sign-in', authController.signIn)
+authRouter.post('/', authController.signIn)
