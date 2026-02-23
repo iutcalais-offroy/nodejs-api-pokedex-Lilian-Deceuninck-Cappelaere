@@ -4,5 +4,8 @@ import { authenticateToken } from '../auth/auth.middleware'
 
 export const decksRouter = Router()
 
-// Accessible via POST /api/decks
+// POST /api/decks
 decksRouter.post('/', authenticateToken, decksController.postDecks)
+
+// GET /api/decks/mine
+decksRouter.get('/mine', authenticateToken, decksController.getDecks)

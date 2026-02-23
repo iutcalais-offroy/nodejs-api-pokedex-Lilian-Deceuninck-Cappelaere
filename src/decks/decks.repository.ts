@@ -29,4 +29,11 @@ export const decksRepository = {
       },
     })
   },
+
+  async findManyDecks(userId: number): Promise<JSON> {
+    return await prisma.deck.findMany({
+      where: { userId },
+      include: { cards: { include: { card: true } } },
+    })
+  },
 }
