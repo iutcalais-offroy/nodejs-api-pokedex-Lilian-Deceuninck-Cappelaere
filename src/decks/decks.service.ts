@@ -16,11 +16,11 @@ export const decksService = {
     return await decksRepository.creationDecks(name, userId, cards)
   },
 
-  async getDecks(userId: number): Promise<JSON> {
+  async getDecks(userId: number): Promise<Deck[]> {
     return await decksRepository.findManyDecks(userId)
   },
 
-  async getDeckId(id: number, userId: number): Promise<JSON> {
+  async getDeckId(id: number, userId: number): Promise<Deck> {
     const deck = await decksRepository.findOneDeck(id)
 
     if (!deck) {

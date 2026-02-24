@@ -30,14 +30,14 @@ export const decksRepository = {
     })
   },
 
-  async findManyDecks(userId: number): Promise<JSON> {
+  async findManyDecks(userId: number): Promise<Deck[]> {
     return await prisma.deck.findMany({
       where: { userId },
       include: { cards: { include: { card: true } } },
     })
   },
 
-  async findOneDeck(id: number): Promise<JSON> {
+  async findOneDeck(id: number): Promise<Deck | null> {
     return await prisma.deck.findUnique({
       where: { id },
       include: { cards: { include: { card: true } } },
