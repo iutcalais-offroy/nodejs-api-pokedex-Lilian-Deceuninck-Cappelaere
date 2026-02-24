@@ -9,3 +9,6 @@ decksRouter.post('/', authenticateToken, decksController.postDecks)
 
 // GET /api/decks/mine
 decksRouter.get('/mine', authenticateToken, decksController.getDecks)
+
+// GET /api/decks/:id
+decksRouter.get('/:id', authenticateToken, decksController.getDeckId)

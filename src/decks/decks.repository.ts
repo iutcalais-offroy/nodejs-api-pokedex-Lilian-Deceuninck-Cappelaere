@@ -36,4 +36,11 @@ export const decksRepository = {
       include: { cards: { include: { card: true } } },
     })
   },
+
+  async findOneDeck(id: number): Promise<JSON> {
+    return await prisma.deck.findUnique({
+      where: { id },
+      include: { cards: { include: { card: true } } },
+    })
+  },
 }

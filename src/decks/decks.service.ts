@@ -19,4 +19,18 @@ export const decksService = {
   async getDecks(userId: number): Promise<JSON> {
     return await decksRepository.findManyDecks(userId)
   },
+
+  async getDeckId(id: number, userId: number): Promise<JSON> {
+    const deck = await decksRepository.findOneDeck(id)
+
+    if (!deck) {
+      throw new Error('DECK_INEXISTANT')
+    }
+
+    if (deck.userId !== userId) {
+      throw new Error('DECK_AUTRE_UTILISATEUR')
+    }
+
+    return deck
+  },
 }
