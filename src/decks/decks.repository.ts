@@ -56,4 +56,14 @@ export const decksRepository = {
       },
     })
   },
+
+  async supprDeck(id: number): Promise<Deck> {
+    await prisma.deckCard.deleteMany({
+      where: { deckId: id },
+    })
+
+    return await prisma.deck.delete({
+      where: { id },
+    })
+  },
 }

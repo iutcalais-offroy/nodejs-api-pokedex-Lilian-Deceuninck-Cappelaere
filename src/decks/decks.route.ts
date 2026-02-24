@@ -15,3 +15,6 @@ decksRouter.get('/:id', authenticateToken, decksController.getDeckId)
 
 // PATCH /api/decks/:id
 decksRouter.patch('/:id', authenticateToken, decksController.patchDeck)
+
+// DELETE /api/decks/:id
+decksRouter.delete('/:id', authenticateToken, decksController.deleteDeck)

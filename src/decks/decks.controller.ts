@@ -118,4 +118,29 @@ export const decksController = {
       return res.status(500).json({ error: 'Erreur serveur' })
     }
   },
+
+  async deleteDeck(req: Request, res: Response): Promise<Response> {
+    const id = parseInt(req.params.id)
+    try {
+      await decksService.getDeckId(id, req.user.userId)
+      await decksService.deleteDeck(id, req.user.userId)
+      return res.status(200).json('Deck supprimé avec succès')
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'DECK_INEXISTANT') {
+        return res.status(404).json({ error: "Le deck n'existe pas" })
+      }
+
+      if (
+        error instanceof Error &&
+        error.message === 'DECK_AUTRE_UTILISATEUR'
+      ) {
+        return res
+          .status(403)
+          .json({ error: "Le deck n'appartient pas à l'utilisateur" })
+      }
+
+      // Code 500 en cas d'erreur serveur
+      return res.status(500).json({ error: 'Erreur serveur' })
+    }
+  },
 }
