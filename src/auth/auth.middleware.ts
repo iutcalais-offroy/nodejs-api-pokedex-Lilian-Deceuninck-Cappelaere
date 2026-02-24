@@ -27,7 +27,7 @@ export const authenticateToken = (
     }
 
     // Ajouter userId à la requête pour l'utiliser dans les routes
-    req.userId = decoded.userId
+    req.user = { userId: decoded.userId }
 
     // Passer au prochain middleware ou à la route
     next()
