@@ -33,4 +33,29 @@ export const decksService = {
 
     return deck
   },
+
+  async patchDeck(
+    id: number,
+    name: string,
+    userId: number,
+    cards: number[],
+  ): Promise<Deck> {
+    const valide: boolean = await decksRepository.valideCard(cards)
+
+    if (!valide) {
+      throw new Error('CARDS_INVALIDE')
+    }
+
+    const deck = await decksRepository.findOneDeck(id)
+
+    if (!deck) {
+      throw new Error('DECK_INEXISTANT')
+    }
+
+    if (deck.userId !== userId) {
+      throw new Error('DECK_AUTRE_UTILISATEUR')
+    }
+
+    return await decksRepository.modifDeck(id, name, cards)
+  },
 }

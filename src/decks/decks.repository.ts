@@ -43,4 +43,17 @@ export const decksRepository = {
       include: { cards: { include: { card: true } } },
     })
   },
+
+  async modifDeck(id: number, name: string, cards: number[]): Promise<Deck> {
+    return await prisma.deck.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        cards: {
+          deleteMany: {},
+          create: cards.map((id) => ({ cardId: id })),
+        },
+      },
+    })
+  },
 }
