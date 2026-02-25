@@ -8,13 +8,9 @@ export const cardController = {
 
       // Code 200 en cas de succès
       return res.status(200).json(cards)
-    } catch (error: unknown) {
+    } catch {
       // Code 500 en cas d'erreur serveur
-      if (error instanceof Error) {
-        return res.json({ error: 'Erreur lors de la récupération des cartes' })
-      }
-      // Always return a Response
-      return res.status(500).json({ error: 'Erreur inconnue' })
+      return res.status(500).json({ error: 'Erreur serveur' })
     }
   },
 }
