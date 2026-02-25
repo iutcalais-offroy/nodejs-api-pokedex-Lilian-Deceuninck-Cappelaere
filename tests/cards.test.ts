@@ -5,14 +5,13 @@ import { app } from '../src/index'
 
 describe('GET /api/cards/', () => {
   it('should return 200 for card list', async () => {
-    prismaMock.card.findMany.mockResolvedValue([])
     const response = await request(app).get('/api/cards/')
 
     expect(response.status).toBe(200)
   })
 
   it('should return 500 for server error', async () => {
-    prismaMock.card.findMany.mockClear()
+    // Mock d'une erreur serveur
     prismaMock.card.findMany.mockRejectedValue(new Error('Erreur serveur'))
 
     const response = await request(app).get('/api/cards/')
