@@ -2,6 +2,12 @@ import { Request, Response } from 'express'
 import { decksService } from './decks.service'
 
 export const decksController = {
+  /**
+   * Crée un deck pour l'utilisateur (token nécessaire)
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur { name, cards }
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns {Promise<Response>} 201 si réussi, 400 si nom du deck manquant, 400 si nombre de cartes différent de 10, 400 si cartes invalides et 500 en cas d'erreur serveur
+   */
   async postDecks(req: Request, res: Response): Promise<Response> {
     const { name, cards } = req.body
 
@@ -35,6 +41,12 @@ export const decksController = {
     }
   },
 
+  /**
+   * Récupère la liste des deck de l'utilisateur (token nécessaire)
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns
+   */
   async getDecks(req: Request, res: Response): Promise<Response> {
     try {
       const decks = await decksService.getDecks(req.user.userId)
@@ -45,6 +57,12 @@ export const decksController = {
     }
   },
 
+  /**
+   * Récupère le deck demandé de l'utilisateur (token nécessaire)
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns
+   */
   async getDeckId(req: Request, res: Response): Promise<Response> {
     const id = parseInt(req.params.id)
     try {
@@ -69,6 +87,12 @@ export const decksController = {
     }
   },
 
+  /**
+   * Modifie le deck demandé de l'utilisateur (token nécessaire)
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns
+   */
   async patchDeck(req: Request, res: Response): Promise<Response> {
     const id = parseInt(req.params.id)
     const { name, cards } = req.body
@@ -115,6 +139,12 @@ export const decksController = {
     }
   },
 
+  /**
+   * Supprime le deck demandé de l'utilisateur (token nécessaire)
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns
+   */
   async deleteDeck(req: Request, res: Response): Promise<Response> {
     const id = parseInt(req.params.id)
     try {

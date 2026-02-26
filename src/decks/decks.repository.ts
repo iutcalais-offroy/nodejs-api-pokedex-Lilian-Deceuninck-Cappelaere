@@ -2,6 +2,11 @@ import prisma from '../database'
 import { Deck } from '../generated/prisma/client'
 
 export const decksRepository = {
+  /**
+   * Teste la validité des cartes du deck
+   * @param {number[]} cards - tableau des cartes du deck
+   * @returns {Promise<boolean>} true si toutes les cartes sont valides false sinon
+   */
   async valideCard(cards: number[]): Promise<boolean> {
     for (let index = 0; index < cards.length; index++) {
       // Test de l’existence de la carte
@@ -10,10 +15,17 @@ export const decksRepository = {
       }
     }
 
-    // Si toute les cartes existes
+    // Si toutes les cartes existes
     return true
   },
 
+  /**
+   * Crée le deck en base de données
+   * @param {string} name - le nom du deck
+   * @param {number} userId - id de l'utilisateur
+   * @param {number[]} cards - tableau des cartes du deck
+   * @returns {Promise<Deck>} le deck créé en base de données
+   */
   async creationDecks(
     name: string,
     userId: number,
@@ -30,6 +42,11 @@ export const decksRepository = {
     })
   },
 
+  /**
+   * Cherche dans le base de données la liste des decks appartenant à l'utilisateur
+   * @param {number} userId
+   * @returns {Promise<Deck[]>} la liste des decks
+   */
   async findManyDecks(userId: number): Promise<Deck[]> {
     return await prisma.deck.findMany({
       where: { userId },
@@ -37,6 +54,11 @@ export const decksRepository = {
     })
   },
 
+  /**
+   * Cherche dans le base de données le deck demandé appartenant à l'utilisateur
+   * @param {number} id - id du deck
+   * @returns {Promise<Deck | null>} le deck si trouvé null sinon
+   */
   async findOneDeck(id: number): Promise<Deck | null> {
     return await prisma.deck.findUnique({
       where: { id },
@@ -44,6 +66,13 @@ export const decksRepository = {
     })
   },
 
+  /**
+   * Modifie dans le base de données le deck demandé appartenant à l'utilisateur
+   * @param {number} id - id du deck
+   * @param {string} name - le nom du deck
+   * @param {number[]} cards - tableau des cartes du deck
+   * @returns {Promise<Deck>} le deck modifier
+   */
   async modifDeck(id: number, name: string, cards: number[]): Promise<Deck> {
     return await prisma.deck.update({
       where: { id },
@@ -57,11 +86,18 @@ export const decksRepository = {
     })
   },
 
+  /**
+   * Supprime dans le base de données le deck demandé appartenant à l'utilisateur
+   * @param {number} id - id du deck
+   * @returns {Promise<Deck>} le deck supprimé
+   */
   async supprDeck(id: number): Promise<Deck> {
+    // Supprime les associations de cartes avec le deck
     await prisma.deckCard.deleteMany({
       where: { deckId: id },
     })
 
+    // Supprime le deck
     return await prisma.deck.delete({
       where: { id },
     })
