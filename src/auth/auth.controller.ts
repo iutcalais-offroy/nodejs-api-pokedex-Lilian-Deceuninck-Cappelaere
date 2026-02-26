@@ -2,6 +2,12 @@ import { Request, Response } from 'express'
 import { authService } from './auth.service'
 
 export const authController = {
+  /**
+   * La fonction signUp gère permet la création d'un nouvel utilisateur
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur { email, username, password }
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns {Promise<Response>} 201 si réussi, 400 si les données sont incomplètes, 409 si l'email est déjà utilisé et 500 en cas d'erreur serveur
+   */
   async signUp(req: Request, res: Response): Promise<Response> {
     const { email, username, password } = req.body
     try {
@@ -23,6 +29,7 @@ export const authController = {
         user,
       })
     } catch (error: unknown) {
+      // Gérer les erreur
       if (error instanceof Error && error.message === 'EMAIL_ALREADY_USED') {
         return res.status(409).json({ error: 'Email déjà utilisé' })
       }
@@ -30,6 +37,12 @@ export const authController = {
     }
   },
 
+  /**
+   * La fonction signIn permet la connection d'un utilisateur existant
+   * @param {Request} req - importer de express permet de récupérer les données venant de l'utilisateur { email, password }
+   * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+   * @returns {Promise<Response>} 200 si réussi, 400 si les données sont incomplètes, 401 si l'email ou le mot de passe sont invalides et 500 en cas d'erreur serveur
+   */
   async signIn(req: Request, res: Response): Promise<Response> {
     const { email, password } = req.body
 
@@ -48,6 +61,7 @@ export const authController = {
         user,
       })
     } catch (error: unknown) {
+      // gérer les erreur
       if (error instanceof Error && error.message === 'INVALID_CREDENTIALS') {
         return res
           .status(401)

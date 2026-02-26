@@ -5,6 +5,13 @@ interface userIdRequest extends Request {
   userId?: number
 }
 
+/**
+ * Middleware d'authentification pour sécuriser les routes gère le Token JWT
+ * @param {userIdRequest} req - importer de express et étendu par userIdRequest permet de récupérer le userId de l'utilisateur
+ * @param {Response} res - importer de express permet de récupérer les données venant du serveur
+ * @param {NextFunction} next - permet de passer au middleware suivant
+ * @returns si token valide ajoute le userId à la requête qui la demander, 401 si token manquant, 403 si token invalide ou expiré
+ */
 export const authenticateToken = (
   req: userIdRequest,
   res: Response,
