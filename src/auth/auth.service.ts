@@ -8,7 +8,7 @@ export const authService = {
    * @param {string} email - l'email
    * @param {string} username - Le nom d'utilisateur
    * @param {string} password - Le mot de passe
-   * @throws {error} EMAIL_ALREADY_USED - Si l'email est déjà utilisé
+   * @throws {Error('EMAIL_ALREADY_USED')} - Si l'email est déjà utilisé
    * @returns {Promise<{ user: { id: number; username: string; email: string} token: string }>} Un JSON contenant l'utilisateur et son Token JWT
    */
   async signUp(
@@ -53,6 +53,7 @@ export const authService = {
    * Connection : Vérifie les identifiants et génère le Token JWT
    * @param {string} email - l'email
    * @param {string} password - le mot de passe
+   * @throws {Error('INVALID_CREDENTIALS')} si l'email ou le mot de passe est manquant
    * @returns {Promise<{ user: { id: number; username: string; email: string } token: string }>} Un JSON contenant l'utilisateur et le Token JWT
    */
   async signIn(
