@@ -15,8 +15,7 @@ export const authenticateToken = (
   const token = authHeader && authHeader.split(' ')[1] // Format: "Bearer TOKEN"
 
   if (!token) {
-    res.status(401).json({ error: 'Token manquant' })
-    return
+    return res.status(401).json({ error: 'Token manquant' })
   }
 
   try {
@@ -31,10 +30,9 @@ export const authenticateToken = (
 
     // Passer au prochain middleware ou à la route
     next()
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(403).json({ error: 'Token invalide ou expiré' })
-    }
-    return
+  } catch {
+    res.status(403).json({ error: 'Token invalide ou expiré' })
   }
+
+  return
 }
