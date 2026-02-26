@@ -59,17 +59,7 @@ export const decksService = {
     return await decksRepository.modifDeck(id, name, cards)
   },
 
-  async deleteDeck(id: number, userId: number): Promise<Deck> {
-    const deck = await decksRepository.findOneDeck(id)
-
-    if (!deck) {
-      throw new Error('DECK_INEXISTANT')
-    }
-
-    if (deck.userId !== userId) {
-      throw new Error('DECK_AUTRE_UTILISATEUR')
-    }
-
+  async deleteDeck(id: number): Promise<Deck> {
     return await decksRepository.supprDeck(id)
   },
 }

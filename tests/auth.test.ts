@@ -99,7 +99,23 @@ describe('POST api/auth/sign-in', () => {
     expect(response.body).toHaveProperty('message', 'Connexion réussie')
   })
 
-  it('should return 401 for invalid credentials', async () => {
+  it('should return 401 for invalid email', async () => {
+    // Mock Email incorrect
+    prismaMock.user.findUnique.mockResolvedValue(null)
+
+    const response = await request(app).post('/api/auth/sign-in').send({
+      email: '@example.com',
+      password: 'password123',
+    })
+
+    expect(response.status).toBe(401)
+    expect(response.body).toHaveProperty(
+      'error',
+      'Email ou mot de passe incorrect',
+    )
+  })
+
+  it('should return 401 for invalid password', async () => {
     const mockUser = {
       id: 1,
       email: 'ash@example.com',
@@ -107,11 +123,11 @@ describe('POST api/auth/sign-in', () => {
       password: await bcrypt.hash('password123', 10),
     }
 
-    // Mock Email ou mot de passe incorrect
+    // Mock d'une connection valide pour tester le mot de passe incorrect
     prismaMock.user.findUnique.mockResolvedValue(mockUser as User)
 
     const response = await request(app).post('/api/auth/sign-in').send({
-      email: '@example.com',
+      email: 'red@example.com',
       password: '123',
     })
 
@@ -123,7 +139,6 @@ describe('POST api/auth/sign-in', () => {
   })
 
   it('should return 400 for invalid data', async () => {
-    // Mock d'une erreur données incomplètes
     const mockUser = {
       id: 1,
       email: 'ash@example.com',
@@ -131,6 +146,7 @@ describe('POST api/auth/sign-in', () => {
       password: await bcrypt.hash('password123', 10),
     }
 
+    // Mock d'une connection valide pour tester les données incomplètes
     prismaMock.user.findUnique.mockResolvedValue(mockUser as User)
 
     const response = await request(app).post('/api/auth/sign-in').send({
