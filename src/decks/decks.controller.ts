@@ -39,11 +39,7 @@ export const decksController = {
     try {
       const decks = await decksService.getDecks(req.user.userId)
       return res.status(200).json(decks)
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        return res.json({ error: 'Erreur' })
-      }
-
+    } catch {
       // Code 500 en cas d'erreur serveur
       return res.status(500).json({ error: 'Erreur serveur' })
     }
