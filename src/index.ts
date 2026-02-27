@@ -6,6 +6,8 @@ import 'dotenv/config'
 import { authRouter } from './auth/auth.route'
 import { cardRouter } from './cards/card.route'
 import { decksRouter } from './decks/decks.route'
+import swaggerUi from 'swagger-ui-express'
+import { swaggerDocument } from './docs'
 
 // Create Express app
 export const app = express()
@@ -17,6 +19,12 @@ app.use(
     credentials: true,
   }),
 )
+
+// Documentation Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "API Documentation"
+}))
 
 app.use(express.json())
 

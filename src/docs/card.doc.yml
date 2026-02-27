@@ -1,0 +1,22 @@
+paths:
+  /api/cards:
+    get:
+      tags:
+        - Cards
+      summary: Liste toutes les cartes
+      description: Liste toutes les cartes Pokemon présentes dans la base de données
+      responses:
+        '200':
+          description: Liste les cartes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Card'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
