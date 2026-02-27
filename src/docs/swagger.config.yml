@@ -19,7 +19,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "Token JWT à obtenir via /auth/login"
+      description: "Token JWT à obtenir via /api/auth/sign-up ou /api/auth/sign-in"
 
   schemas:
     User:
@@ -46,8 +46,10 @@ components:
           type: string
           format: date-time
         decks:
-          type: integer[]
-          example: [1, 4, 7, 25, 2, 5, 8, 26, 3, 6]
+          type: array
+          items:
+            $ref: '#/components/schemas/Deck'
+          example: [ { "id": 1, "name": "Starter Deck", "userId": 1, "createdAt": "2026-02-25T23:15:49.020Z", "updatedAt": "2026-02-25T23:15:49.020Z", "cards": [ { "id": 1, "deckId": 1, "cardId": 109, "card": { "id": 109, "name": "Koffing", "hp": 40, "attack": 65, "type": "Poison", "pokedexNumber": 109, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/109.png", "createdAt": "2026-02-25T23:15:46.076Z", "updatedAt": "2026-02-25T23:15:46.076Z" } }, { "id": 2, "deckId": 1, "cardId": 99, "card": { "id": 99, "name": "Kingler", "hp": 55, "attack": 130, "type": "Water", "pokedexNumber": 99, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/99.png", "createdAt": "2026-02-25T23:15:46.067Z", "updatedAt": "2026-02-25T23:15:46.067Z" } }, { "id": 3, "deckId": 1, "cardId": 143, "card": { "id": 143, "name": "Snorlax", "hp": 160, "attack": 110, "type": "Normal", "pokedexNumber": 143, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png", "createdAt": "2026-02-25T23:15:46.108Z", "updatedAt": "2026-02-25T23:15:46.108Z" } }, { "id": 4, "deckId": 1, "cardId": 76, "card": { "id": 76, "name": "Golem", "hp": 80, "attack": 120, "type": "Rock", "pokedexNumber": 76, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/76.png", "createdAt": "2026-02-25T23:15:46.050Z", "updatedAt": "2026-02-25T23:15:46.050Z" } }, { "id": 5, "deckId": 1, "cardId": 30, "card": { "id": 30, "name": "Nidorina", "hp": 70, "attack": 62, "type": "Poison", "pokedexNumber": 30, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/30.png", "createdAt": "2026-02-25T23:15:46.001Z", "updatedAt": "2026-02-25T23:15:46.001Z" } }, { "id": 6, "deckId": 1, "cardId": 148, "card": { "id": 148, "name": "Dragonair", "hp": 61, "attack": 84, "type": "Dragon", "pokedexNumber": 148, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/148.png", "createdAt": "2026-02-25T23:15:46.112Z", "updatedAt": "2026-02-25T23:15:46.112Z" } }, { "id": 7, "deckId": 1, "cardId": 139, "card": { "id": 139, "name": "Omastar", "hp": 70, "attack": 60, "type": "Rock", "pokedexNumber": 139, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/139.png", "createdAt": "2026-02-25T23:15:46.106Z", "updatedAt": "2026-02-25T23:15:46.106Z" } }, { "id": 8, "deckId": 1, "cardId": 5, "card": { "id": 5, "name": "Charmeleon", "hp": 58, "attack": 64, "type": "Fire", "pokedexNumber": 5, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/5.png", "createdAt": "2026-02-25T23:15:45.978Z", "updatedAt": "2026-02-25T23:15:45.978Z" } }, { "id": 9, "deckId": 1, "cardId": 3, "card": { "id": 3, "name": "Venusaur", "hp": 80, "attack": 82, "type": "Grass", "pokedexNumber": 3, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png", "createdAt": "2026-02-25T23:15:45.975Z", "updatedAt": "2026-02-25T23:15:45.975Z" } }, { "id": 10, "deckId": 1, "cardId": 116, "card": { "id": 116, "name": "Horsea", "hp": 30, "attack": 40, "type": "Water", "pokedexNumber": 116, "imgUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/116.png", "createdAt": "2026-02-25T23:15:46.088Z", "updatedAt": "2026-02-25T23:15:46.088Z" } } ] } ]
 
     Card:
       type: object
@@ -57,7 +59,7 @@ components:
           example: 1
         name:
           type: string
-          example: Bulbasaur
+          example: "Bulbasaur"
         hp:
           type: integer
           example: 45
@@ -67,14 +69,14 @@ components:
         type:
           type: PokemonType
           enum: [Normal, Fire, Water, Electric, Grass, Ice, Fighting, Poison, Ground, Flying, Psychic, Bug, Rock, Ghost, Dragon, Dark, Steel, Fairy]
-          example: Grass
+          example: "Grass"
         pokedexNumber:
           type: integer
           example: 1
         imgUrl:
           type: string
           nullable: true
-          example: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png
+          example: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
         createdAt:
           type: string
           format: date-time
@@ -90,7 +92,7 @@ components:
           example: 1
         name:
           type: string
-          example: Starter Deck
+          example: "Starter Deck"
         userId:
           type: integer
           example: 1
@@ -124,5 +126,7 @@ components:
 tags:
   - name: Authentication
     description: Gestion de l'authentification
-  - name: Users
-    description: Gestion des utilisateurs
+  - name: Cards
+    description: Gestion des cartes
+  - name: Deck
+    description: Gestion des deck

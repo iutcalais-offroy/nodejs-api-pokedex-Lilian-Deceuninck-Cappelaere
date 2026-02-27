@@ -19,10 +19,10 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: "red@example.com"
+                  example: "ash@example.com"
                 username:
                   type: string
-                  example: "red"
+                  example: "ash"
                 password:
                   type: string
                   format: password
@@ -42,7 +42,7 @@ paths:
                     type: string
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   user:
-                    $ref: '#/components/schemas/User'
+                    example: { "id": 3, "username": "ash", "email": "ash@example.com" }
         '400':
           description: Les données sont incomplètes
           content:

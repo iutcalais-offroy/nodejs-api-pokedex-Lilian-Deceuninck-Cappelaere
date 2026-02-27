@@ -5,7 +5,8 @@ paths:
         - Deck
       summary: Création d'un Deck
       description: Crée un deck
-      security: [bearerAuth]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -20,7 +21,9 @@ paths:
                   type: string
                   example: "Starter Deck"
                 cards:
-                  type: integer[]
+                  type: array
+                  items:
+                    type: integer
                   example: [1, 4, 7, 25, 2, 5, 8, 26, 3, 6]
       responses:
         '201':
@@ -34,19 +37,7 @@ paths:
                     type: string
                     example: "Deck créé avec succès"
         '400':
-          description: Le nom du deck est manquant
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '400':
-          description: Le deck doit contenir exactement 10 cartes
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '400':
-          description: Un ou plusieurs numéros de cartes fournies sont invalides ou inexistant
+          description: (Le nom du deck est manquant) ou (Le deck doit contenir exactement 10 cartes) ou (Un ou plusieurs numéros de cartes fournies sont invalides ou inexistant)
           content:
             application/json:
               schema:
@@ -64,7 +55,8 @@ paths:
         - Deck
       summary: Liste tous Decks
       description: Liste tous Deck de l'utilisateur connecté
-      security: [bearerAuth]
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Liste les decks
@@ -73,8 +65,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  Deck[]:
-                    $ref: '#/components/schemas/Deck'
+                  Decks:
+                    type: array
+                    items: 
+                      $ref: '#/components/schemas/Deck'
         '500':
           description: Erreur serveur
           content:
@@ -82,13 +76,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /api/decks/:id:
+  /api/decks/{id}:
     get:
       tags:
         - Deck
       summary: Consultation d'un Deck
       description: Consultation du Deck demandé par l'utilisateur connecté
-      security: [bearerAuth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
           description: Consultation du deck
@@ -118,13 +119,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /api/decks/:id:
     patch:
       tags:
         - Deck
       summary: Modification d'un Deck
       description: Modification du Deck demandé par l'utilisateur connecté
-      security: [bearerAuth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -139,7 +146,7 @@ paths:
                   type: string
                   example: "Updated Deck Name"
                 cards:
-                  type: integer[]
+                  type: array
                   example: [6, 9, 12, 15, 18, 21, 24, 27, 30, 33]
       responses:
         '200':
@@ -153,19 +160,7 @@ paths:
                     type: string
                     example: "Deck modifié avec succès"
         '400':
-          description: Le nom du deck est manquant
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '400':
-          description: Le deck doit contenir exactement 10 cartes
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '400':
-          description: Un ou plusieurs numéros de cartes fournies sont invalides ou inexistant
+          description: (Le nom du deck est manquant) ou (Le deck doit contenir exactement 10 cartes) ou (Un ou plusieurs numéros de cartes fournies sont invalides ou inexistant)
           content:
             application/json:
               schema:
@@ -183,13 +178,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /api/decks/:id:
     delete:
       tags:
         - Deck
       summary: Suppression d'un Deck
       description: Suppression du Deck demandé par l'utilisateur connecté
-      security: [bearerAuth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
           description: Deck supprimé avec succès

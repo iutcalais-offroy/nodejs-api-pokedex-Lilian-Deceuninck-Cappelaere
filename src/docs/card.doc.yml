@@ -11,10 +11,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  card:
-                    $ref: '#/components/schemas/Card'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Card'
         '500':
           description: Erreur serveur
           content:
