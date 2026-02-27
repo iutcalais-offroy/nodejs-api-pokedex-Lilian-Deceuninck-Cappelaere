@@ -5,6 +5,7 @@ import { decksService } from '../decks/decks.service'
 export const matchMaking = (io: Server) => {
   let roomNum: number = 1
   const rooms: string[] = []
+
   io.on('connection', (socket: Socket) => {
     socket.on('createRoom', async (data: { deckId: number }) => {
       try {
@@ -39,6 +40,14 @@ export const matchMaking = (io: Server) => {
         ) {
           socket.emit('logs', `Le deck n°${data.deckId} ne vous appartient pas`)
         }
+      }
+    })
+
+    socket.on('getRooms', () => {
+      if (rooms.length == 0) {
+        socket.emit('Aucune room disponible')
+      } else {
+        socket.emit('Liste des rooms disponible', rooms)
       }
     })
   })
