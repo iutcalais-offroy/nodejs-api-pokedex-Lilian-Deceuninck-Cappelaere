@@ -8,6 +8,8 @@ import { cardRouter } from './cards/card.route'
 import { decksRouter } from './decks/decks.route'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerDocument } from './docs'
+import { Server } from 'socket.io'
+import { socketMiddleware } from './socket/socket.middleware'
 
 // Create Express app
 export const app = express()
@@ -46,6 +48,12 @@ app.use('/api/decks', decksRouter)
 if (require.main === module) {
   // Create HTTP server
   const httpServer = createServer(app)
+
+  const io = new Server(httpServer, {
+    cors: {origin: "*"}
+  })
+
+  io.use(socketMiddleware)
 
   // Start server
   try {
