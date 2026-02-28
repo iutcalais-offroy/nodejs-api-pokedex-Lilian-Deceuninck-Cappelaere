@@ -236,6 +236,49 @@ export const matchMaking = (io: Server) => {
       return gameState(game)
     })
 
+    socket.on(
+      'playCard',
+      async (data: { roomId: string; cardIndex: number }) => {
+        const game = games.find((game: Game) => game.gameId === data.roomId)
+        if (!game) {
+          return socket.emit('error', 'Partie introuvable')
+        }
+
+        let currentPlayer: Player
+        let playerEmail: string
+
+        if (socket.user.userId === game.player1.playerId) {
+          currentPlayer = game.player1
+          playerEmail = game.player1.email
+        } else if (socket.user.userId === game.player2.playerId) {
+          currentPlayer = game.player2
+          playerEmail = game.player2.email
+        } else {
+          return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
+        }
+
+        if (game.turn !== playerEmail) {
+          return socket.emit('error', "Ce n'est pas votre tour")
+        }
+
+        if (currentPlayer.field !== null) {
+          return socket.emit('error', 'Il y a déjà une carte sur votre terrain')
+        }
+
+        if (data.cardIndex < 0 || data.cardIndex >= currentPlayer.hand.length) {
+          return socket.emit(
+            'error',
+            "La carte n'existe pas cardIndex invalide",
+          )
+        }
+
+        const cardPlay = currentPlayer.hand.splice(data.cardIndex, 1)[0]
+        currentPlayer.field = cardPlay
+
+        gameState(game)
+      },
+    )
+
     function cardsLabel(tabCards: Card[] | Card | null) {
       // field vide
       if (tabCards === null) {
