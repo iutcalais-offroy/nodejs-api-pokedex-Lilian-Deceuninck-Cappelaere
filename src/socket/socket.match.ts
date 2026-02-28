@@ -391,7 +391,7 @@ export const matchMaking = (io: Server) => {
           terrain: cardsLabel(game.player2.field),
           score: game.player2.score,
         },
-        tour: `tour du joueur ${game.currentPlayerSocketId}`,
+        currentPlayerSocketId: game.currentPlayerSocketId,
       })
 
       if (messageEmit === 'gameStarted') {
@@ -413,7 +413,7 @@ export const matchMaking = (io: Server) => {
           terrain: cardsLabel(game.player1.field),
           score: game.player1.score,
         },
-        tour: `tour du joueur ${game.currentPlayerSocketId}`,
+        currentPlayerSocketId: game.currentPlayerSocketId,
       })
     }
   })
