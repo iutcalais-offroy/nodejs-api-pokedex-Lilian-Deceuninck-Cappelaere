@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io'
 import { decksService } from '../decks/decks.service'
-import { Card } from '../generated/prisma/client'
+import { Deck, Card } from '../generated/prisma/client'
 import { calculateDamage } from '../utils/rules.util'
 
 interface AuthenticatedSocket extends Socket {
@@ -8,6 +8,12 @@ interface AuthenticatedSocket extends Socket {
     userId: number
     email: string
   }
+}
+
+interface DeckWithCards extends Deck {
+  cards: {
+    card: Card
+  }[]
 }
 
 interface Player {
@@ -68,10 +74,10 @@ export const matchMaking = (io: Server) => {
      */
     authSocket.on('createRoom', async (data: { deckId: number }) => {
       try {
-        const deck = await decksService.getDeckId(
+        const deck = (await decksService.getDeckId(
           Number(data.deckId),
           authSocket.user.userId,
-        )
+        )) as DeckWithCards
 
         // Récupération du nom des cartes avec typage explicite pour Prisma
         const nameCard = deck.cards.map(
@@ -151,10 +157,10 @@ export const matchMaking = (io: Server) => {
       'joinRoom',
       async (data: { roomId: string; deckId: number }) => {
         try {
-          const deck = await decksService.getDeckId(
+          const deck = (await decksService.getDeckId(
             Number(data.deckId),
             authSocket.user.userId,
-          )
+          )) as DeckWithCards
 
           const indexRoom = rooms.findIndex(
             (room) => room.roomId === data.roomId,
