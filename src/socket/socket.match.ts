@@ -50,5 +50,45 @@ export const matchMaking = (io: Server) => {
         socket.emit('Liste des rooms disponible', rooms)
       }
     })
+
+    socket.on('joinRoom', async (data: { roomId: string; deckId: number }) => {
+      try {
+        const deck = await decksService.getDeckId(
+          Number(data.deckId),
+          socket.user.userId,
+        )
+
+        const indexRoom = rooms.findIndex((roomId) =>
+          roomId.startsWith(`Room n°${data.roomId}`),
+        )
+
+        if (indexRoom === -1) {
+          socket.emit('error', "La room n'existe pas")
+        } else {
+          socket.join(data.roomId)
+          socket.emit(`${Number(data.roomId) - 1}`)
+
+          rooms.splice(indexRoom, 1)
+
+          io.to(data.roomId).emit('gameStarted', 'La partie commence')
+
+          socket.broadcast.emit(
+            'roomsListUpdated',
+            `Liste des rooms disponible : [${rooms}]`,
+          )
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error && error.message === 'DECK_INEXISTANT') {
+          socket.emit('logs', `Le deck n°${data.deckId} n'existe pas`)
+        }
+
+        if (
+          error instanceof Error &&
+          error.message === 'DECK_AUTRE_UTILISATEUR'
+        ) {
+          socket.emit('logs', `Le deck n°${data.deckId} ne vous appartient pas`)
+        }
+      }
+    })
   })
 }
