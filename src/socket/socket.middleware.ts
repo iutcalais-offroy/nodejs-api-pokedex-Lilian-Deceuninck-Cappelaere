@@ -1,6 +1,13 @@
 import { Socket } from 'socket.io'
 import jwt from 'jsonwebtoken'
 
+interface AuthenticatedSocket extends Socket {
+  user: {
+    userId: number
+    email: string
+  }
+}
+
 export const socketMiddleware = (
   socket: Socket,
   next: (error?: Error) => void,
@@ -19,7 +26,10 @@ export const socketMiddleware = (
     }
 
     // Ajouter userId et email au socket
-    socket.user = { userId: decoded.userId, email: decoded.email }
+    ;(socket as AuthenticatedSocket).user = {
+      userId: decoded.userId,
+      email: decoded.email,
+    }
 
     // Passer au prochain middleware ou à la route
     next()

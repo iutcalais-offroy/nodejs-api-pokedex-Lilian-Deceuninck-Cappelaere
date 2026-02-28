@@ -23,7 +23,7 @@ export const decksController = {
           .json({ error: 'Le deck doit contenir exactement 10 cartes' })
       }
 
-      await decksService.creationDecks(name, req.user.userId, cards)
+      await decksService.creationDecks(name, req.user!.userId, cards)
 
       // Code 201 en cas de succès
       return res.status(201).json('Deck créé avec succès')
@@ -49,7 +49,7 @@ export const decksController = {
    */
   async getDecks(req: Request, res: Response): Promise<Response> {
     try {
-      const decks = await decksService.getDecks(req.user.userId)
+      const decks = await decksService.getDecks(req.user!.userId)
       return res.status(200).json(decks)
     } catch {
       // Code 500 en cas d'erreur serveur
@@ -66,7 +66,7 @@ export const decksController = {
   async getDeckId(req: Request, res: Response): Promise<Response> {
     const id = parseInt(req.params.id)
     try {
-      const deck = await decksService.getDeckId(id, req.user.userId)
+      const deck = await decksService.getDeckId(id, req.user!.userId)
       return res.status(200).json(deck)
     } catch (error: unknown) {
       if (error instanceof Error && error.message === 'DECK_INEXISTANT') {
@@ -109,7 +109,7 @@ export const decksController = {
           .json({ error: 'Le deck doit contenir exactement 10 cartes' })
       }
 
-      await decksService.patchDeck(id, name, req.user.userId, cards)
+      await decksService.patchDeck(id, name, req.user!.userId, cards)
 
       // Code 200 en cas de succès
       return res.status(200).json('Deck modifié avec succès')
@@ -148,8 +148,8 @@ export const decksController = {
   async deleteDeck(req: Request, res: Response): Promise<Response> {
     const id = parseInt(req.params.id)
     try {
-      await decksService.getDeckId(id, req.user.userId)
-      await decksService.deleteDeck(id, req.user.userId)
+      await decksService.getDeckId(id, req.user!.userId)
+      await decksService.deleteDeck(id)
       return res.status(200).json('Deck supprimé avec succès')
     } catch (error: unknown) {
       if (error instanceof Error && error.message === 'DECK_INEXISTANT') {
