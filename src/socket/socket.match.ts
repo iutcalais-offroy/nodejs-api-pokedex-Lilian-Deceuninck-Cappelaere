@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io'
 import { decksService } from '../decks/decks.service'
 import { Card } from '../generated/prisma/client'
+import { calculateDamage } from '../utils/rules.util'
 
 interface Player {
   socketId: string
@@ -9,8 +10,6 @@ interface Player {
   deck: Card[]
   hand: Card[]
   field: Card | null
-  fight: number | null
-  HP: number | null
   score: number
 }
 
@@ -65,8 +64,6 @@ export const matchMaking = (io: Server) => {
           deck: cards.slice(5),
           hand: cards.slice(0, 5),
           field: null,
-          fight: null,
-          HP: null,
           score: 0,
         }
         players.push(player1)
@@ -140,8 +137,6 @@ export const matchMaking = (io: Server) => {
             deck: cards.slice(5),
             hand: cards.slice(0, 5),
             field: null,
-            fight: null,
-            HP: null,
             score: 0,
           }
           players.push(player2)
@@ -275,9 +270,108 @@ export const matchMaking = (io: Server) => {
         const cardPlay = currentPlayer.hand.splice(data.cardIndex, 1)[0]
         currentPlayer.field = cardPlay
 
-        gameState(game)
+        return gameState(game)
       },
     )
+
+    socket.on('attack', async (data: { roomId: string }) => {
+      const game = games.find((game: Game) => game.gameId === data.roomId)
+      if (!game) {
+        return socket.emit('error', 'Partie introuvable')
+      }
+
+      let currentPlayer: Player
+      let playerEmail: string
+      let otherPlayer: Player
+
+      if (socket.user.userId === game.player1.playerId) {
+        currentPlayer = game.player1
+        playerEmail = game.player1.email
+        otherPlayer = game.player2
+      } else if (socket.user.userId === game.player2.playerId) {
+        currentPlayer = game.player2
+        playerEmail = game.player2.email
+        otherPlayer = game.player1
+      } else {
+        return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
+      }
+
+      if (game.turn !== playerEmail) {
+        return socket.emit('error', "Ce n'est pas votre tour")
+      }
+
+      if (currentPlayer.field === null) {
+        return socket.emit('error', "Il n'y a aucune carte sur votre terrain")
+      }
+
+      if (otherPlayer.field === null) {
+        return socket.emit(
+          'error',
+          "Il n'y a aucune carte sur le terrain de votre adversaire",
+        )
+      }
+
+      const damage = calculateDamage(
+        currentPlayer.field.attack,
+        currentPlayer.field.type,
+        otherPlayer.field.type,
+      )
+
+      otherPlayer.field.hp -= damage
+
+      io.to(data.roomId).emit(
+        'combat',
+        `${currentPlayer.field.name} attaque ${otherPlayer.field.name} et fait ${damage} dégâts`,
+      )
+
+      if (otherPlayer.field.hp <= 0) {
+        currentPlayer.score += 1
+        io.to(data.roomId).emit('combat', `${otherPlayer.field.name} et KO`)
+        otherPlayer.field = null
+      }
+
+      if (currentPlayer.score === 3) {
+        io.to(data.roomId).emit(
+          'gameEnded',
+          `Fin du jeu victoire de ${currentPlayer.email} 3 points à ${otherPlayer.score}`,
+        )
+        return games.splice(
+          games.findIndex((game: Game) => game.gameId === data.roomId),
+        )
+      }
+
+      game.turn = otherPlayer.email
+
+      return gameState(game)
+    })
+
+    socket.on('endTurn', async (data: { roomId: string }) => {
+      const game = games.find((game: Game) => game.gameId === data.roomId)
+      if (!game) {
+        return socket.emit('error', 'Partie introuvable')
+      }
+
+      let playerEmail: string
+      let otherPlayer: Player
+
+      if (socket.user.userId === game.player1.playerId) {
+        playerEmail = game.player1.email
+        otherPlayer = game.player2
+      } else if (socket.user.userId === game.player2.playerId) {
+        playerEmail = game.player2.email
+        otherPlayer = game.player1
+      } else {
+        return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
+      }
+
+      if (game.turn !== playerEmail) {
+        return socket.emit('error', "Ce n'est pas votre tour")
+      }
+
+      game.turn = otherPlayer.email
+
+      return gameState(game)
+    })
 
     function cardsLabel(tabCards: Card[] | Card | null) {
       // field vide
@@ -312,7 +406,6 @@ export const matchMaking = (io: Server) => {
         vous: {
           main: cardsLabel(game.player1.hand),
           terrain: cardsLabel(game.player1.field),
-          hp_pokemon_terrain: game.player1.HP,
           score: game.player1.score,
         },
         'votre adversaire': {
@@ -328,7 +421,6 @@ export const matchMaking = (io: Server) => {
         vous: {
           main: cardsLabel(game.player2.hand),
           terrain: cardsLabel(game.player2.field),
-          hp_pokemon_terrain: game.player2.HP,
           score: game.player2.score,
         },
         'votre adversaire': {
