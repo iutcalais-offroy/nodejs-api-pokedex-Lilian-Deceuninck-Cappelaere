@@ -28,8 +28,12 @@ interface Game {
   currentPlayerSocketId: string
 }
 
-// Fonction pour mélanger le deck
-const shuffle = (array: []) => {
+/**
+ * Fonction permettant de mélanger le deck
+ * @param {Card[]} array - tableau des cartes du deck
+ * @returns {Card[]} le tableau des cartes mélanger
+ */
+const shuffle = (array: Card[]): Card[] => {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[array[i], array[j]] = [array[j], array[i]]
@@ -37,6 +41,10 @@ const shuffle = (array: []) => {
   return array
 }
 
+/**
+ * Gère la création des room et les matchs
+ * @param {Server} io - serveur socket.io
+ */
 export const matchMaking = (io: Server) => {
   let roomNum: number = 1
   const rooms: Room[] = []
@@ -44,6 +52,9 @@ export const matchMaking = (io: Server) => {
   const games: Game[] = []
 
   io.on('connection', (socket: Socket) => {
+    /**
+     * Création d'une room
+     */
     socket.on('createRoom', async (data: { deckId: number }) => {
       try {
         const deck = await decksService.getDeckId(
@@ -106,6 +117,9 @@ export const matchMaking = (io: Server) => {
       }
     })
 
+    /**
+     * Affiche la liste des room qui ne sont pas complete
+     */
     socket.on('getRooms', () => {
       if (rooms.length == 0) {
         socket.emit('Aucune room disponible')
@@ -114,6 +128,9 @@ export const matchMaking = (io: Server) => {
       }
     })
 
+    /**
+     * Permet de rejoindre une room
+     */
     socket.on('joinRoom', async (data: { roomId: string; deckId: number }) => {
       try {
         const deck = await decksService.getDeckId(
@@ -195,6 +212,9 @@ export const matchMaking = (io: Server) => {
       }
     })
 
+    /**
+     * Permer de piocher des cartes
+     */
     socket.on('drawCards', async (data: { roomId: string }) => {
       const infos = gameAndTurn(data.roomId)
 
@@ -221,6 +241,9 @@ export const matchMaking = (io: Server) => {
       return gameState(game)
     })
 
+    /**
+     * Permet de jouer une carte
+     */
     socket.on(
       'playCard',
       async (data: { roomId: string; cardIndex: number }) => {
@@ -250,6 +273,9 @@ export const matchMaking = (io: Server) => {
       },
     )
 
+    /**
+     * Permet d'attaquer
+     */
     socket.on('attack', async (data: { roomId: string }) => {
       const infos = gameAndTurn(data.roomId)
 
@@ -307,6 +333,9 @@ export const matchMaking = (io: Server) => {
         .emit('Turn', "C'est à vous de jouer")
     })
 
+    /**
+     * Permet de terminer le tour
+     */
     socket.on('endTurn', async (data: { roomId: string }) => {
       const infos = gameAndTurn(data.roomId)
 
@@ -324,8 +353,16 @@ export const matchMaking = (io: Server) => {
         .emit('Turn', "C'est à vous de jouer")
     })
 
-    // Vérifie la partie et le tour du joueur
-    function gameAndTurn(roomId: string) {
+    /**
+     * Vérifie la partie et le tour du joueur
+     * @param {string} roomId - id de la room
+     * @returns { game: Game, currentPlayer: Player, otherPlayer: Player } La partie, le joueur actif et l'autre jouer
+     */
+    function gameAndTurn(roomId: string): {
+      game: Game
+      currentPlayer: Player
+      otherPlayer: Player
+    } {
       const game = games.find((game: Game) => game.gameId === roomId)
       if (!game) {
         return socket.emit('error', 'Partie introuvable')
@@ -351,6 +388,11 @@ export const matchMaking = (io: Server) => {
       return { game, currentPlayer, otherPlayer }
     }
 
+    /**
+     * Met en page les cartes pour l'affichage
+     * @param {Card[] | Card | null} tabCards - Les cartes à mettre en page
+     * @returns la liste des carte mise en page
+     */
     function cardsLabel(tabCards: Card[] | Card | null) {
       // field vide
       if (tabCards === null) {
@@ -376,7 +418,12 @@ export const matchMaking = (io: Server) => {
       }
     }
 
-    function gameState(game: Game, message?: string) {
+    /**
+     * Permet la gestion sécurisé des messages vers les joueurs
+     * @param {Game} game - La partie
+     * @param {string | null} message - Un message si différent de gameStateUpdated
+     */
+    function gameState(game: Game, message: string | null) {
       const messageEmit: string = message || 'gameStateUpdated'
 
       // Joueur 1
