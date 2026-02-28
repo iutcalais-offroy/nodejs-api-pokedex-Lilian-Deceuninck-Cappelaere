@@ -1,15 +1,15 @@
 import { Server, Socket } from 'socket.io'
 import { decksService } from '../decks/decks.service'
 import { Card } from '../generated/prisma/client'
+import { calculateDamage } from '../utils/rules.util'
 
 interface Player {
+  socketId: string
   playerId: number
   email: string
   deck: Card[]
   hand: Card[]
   field: Card | null
-  fight: number | null
-  HP: number | null
   score: number
 }
 
@@ -22,14 +22,18 @@ interface Room {
 }
 
 interface Game {
-  gameId: number
+  gameId: string
   player1: Player
   player2: Player
-  turn: number
+  currentPlayerSocketId: string
 }
 
-// Fonction pour mélanger le deck
-const shuffle = (array: []) => {
+/**
+ * Fonction permettant de mélanger le deck
+ * @param {Card[]} array - tableau des cartes du deck
+ * @returns {Card[]} le tableau des cartes mélanger
+ */
+const shuffle = (array: Card[]): Card[] => {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[array[i], array[j]] = [array[j], array[i]]
@@ -37,6 +41,10 @@ const shuffle = (array: []) => {
   return array
 }
 
+/**
+ * Gère la création des room et les matchs
+ * @param {Server} io - serveur socket.io
+ */
 export const matchMaking = (io: Server) => {
   let roomNum: number = 1
   const rooms: Room[] = []
@@ -44,6 +52,9 @@ export const matchMaking = (io: Server) => {
   const games: Game[] = []
 
   io.on('connection', (socket: Socket) => {
+    /**
+     * Création d'une room
+     */
     socket.on('createRoom', async (data: { deckId: number }) => {
       try {
         const deck = await decksService.getDeckId(
@@ -55,16 +66,17 @@ export const matchMaking = (io: Server) => {
         const nameCard = deck.cards.map((carte: string) => carte.card.name)
 
         // mélange des cartes
-        const cards = shuffle(deck.cards.map((carte: Card) => carte.card))
+        const cards = shuffle(
+          deck.cards.map((carte: Card) => ({ ...carte.card })),
+        )
 
         const player1: Player = {
+          socketId: socket.id,
           playerId: socket.user.userId,
           email: socket.user.email,
           deck: cards.slice(5),
           hand: cards.slice(0, 5),
           field: null,
-          fight: null,
-          HP: null,
           score: 0,
         }
         players.push(player1)
@@ -105,6 +117,9 @@ export const matchMaking = (io: Server) => {
       }
     })
 
+    /**
+     * Affiche la liste des room qui ne sont pas complete
+     */
     socket.on('getRooms', () => {
       if (rooms.length == 0) {
         socket.emit('Aucune room disponible')
@@ -113,6 +128,9 @@ export const matchMaking = (io: Server) => {
       }
     })
 
+    /**
+     * Permet de rejoindre une room
+     */
     socket.on('joinRoom', async (data: { roomId: string; deckId: number }) => {
       try {
         const deck = await decksService.getDeckId(
@@ -129,16 +147,17 @@ export const matchMaking = (io: Server) => {
           socket.emit('error', 'Vous ne pouvez pas rejoindre votre propre room')
         } else {
           // mélange des cartes
-          const cards = shuffle(deck.cards.map((carte: Card) => carte.card))
+          const cards = shuffle(
+            deck.cards.map((carte: Card) => ({ ...carte.card })),
+          )
 
           const player2: Player = {
+            socketId: socket.id,
             playerId: socket.user.userId,
             email: socket.user.email,
             deck: cards.slice(5),
             hand: cards.slice(0, 5),
             field: null,
-            fight: null,
-            HP: null,
             score: 0,
           }
           players.push(player2)
@@ -153,10 +172,10 @@ export const matchMaking = (io: Server) => {
             socket.emit('error', 'Joueur 1 introuvable')
           } else {
             const newGame: Game = {
-              gameId: Number(data.roomId),
+              gameId: data.roomId,
               player1: player1,
               player2: player2,
-              turn: 1,
+              currentPlayerSocketId: player1.socketId,
             }
             games.push(newGame)
 
@@ -173,18 +192,10 @@ export const matchMaking = (io: Server) => {
 
             io.to(data.roomId).emit(
               'gameStarted',
-              `La partie entre ${player1.email} et ${player2.email} commence`,
+              `La partie entre ${player1.email} et ${player2.email} commence au tour de ${newGame.currentPlayerSocketId}`,
             )
-            socket
-              .to(data.roomId)
-              .emit(
-                'hand',
-                `Votre main (nom du pokemon, hp, attaque, type) : ${player1.hand.map((carte) => [carte.name, carte.hp, carte.attack, carte.type]).join('; ')}`,
-              )
-            socket.emit(
-              'hand',
-              `Votre main (nom du pokemon, hp, attaque, type) : ${player2.hand.map((carte) => [carte.name, carte.hp, carte.attack, carte.type]).join('; ')}`,
-            )
+
+            gameState(newGame, 'gameStarted')
           }
         }
       } catch (error: unknown) {
@@ -200,5 +211,257 @@ export const matchMaking = (io: Server) => {
         }
       }
     })
+
+    /**
+     * Permer de piocher des cartes
+     */
+    socket.on('drawCards', async (data: { roomId: string }) => {
+      const infos = gameAndTurn(data.roomId)
+
+      if (!infos || typeof infos === 'boolean') {
+        return
+      }
+
+      const { game, currentPlayer } = infos
+
+      if (currentPlayer.hand.length === 5) {
+        return socket.emit('error', 'Vous avez déjà 5 cartes')
+      }
+
+      while (currentPlayer.hand.length < 5 && currentPlayer.deck.length > 0) {
+        const card = currentPlayer.deck.shift()
+
+        if (card) {
+          currentPlayer.hand.push(card)
+        } else {
+          return
+        }
+      }
+
+      return gameState(game)
+    })
+
+    /**
+     * Permet de jouer une carte
+     */
+    socket.on(
+      'playCard',
+      async (data: { roomId: string; cardIndex: number }) => {
+        const infos = gameAndTurn(data.roomId)
+
+        if (!infos || typeof infos === 'boolean') {
+          return
+        }
+
+        const { game, currentPlayer } = infos
+
+        if (currentPlayer.field !== null) {
+          return socket.emit('error', 'Il y a déjà une carte sur votre terrain')
+        }
+
+        if (data.cardIndex < 0 || data.cardIndex >= currentPlayer.hand.length) {
+          return socket.emit(
+            'error',
+            "La carte n'existe pas cardIndex invalide",
+          )
+        }
+
+        const cardPlay = currentPlayer.hand.splice(data.cardIndex, 1)[0]
+        currentPlayer.field = cardPlay
+
+        return gameState(game)
+      },
+    )
+
+    /**
+     * Permet d'attaquer
+     */
+    socket.on('attack', async (data: { roomId: string }) => {
+      const infos = gameAndTurn(data.roomId)
+
+      if (!infos || typeof infos === 'boolean') {
+        return
+      }
+
+      const { game, currentPlayer, otherPlayer } = infos
+
+      if (currentPlayer.field === null) {
+        return socket.emit('error', "Il n'y a aucune carte sur votre terrain")
+      }
+
+      if (otherPlayer.field === null) {
+        return socket.emit(
+          'error',
+          "Il n'y a aucune carte sur le terrain de votre adversaire",
+        )
+      }
+
+      const damage = calculateDamage(
+        currentPlayer.field.attack,
+        currentPlayer.field.type,
+        otherPlayer.field.type,
+      )
+
+      otherPlayer.field.hp -= damage
+
+      io.to(data.roomId).emit(
+        'combat',
+        `${currentPlayer.field.name} attaque ${otherPlayer.field.name} et fait ${damage} dégâts`,
+      )
+
+      if (otherPlayer.field.hp <= 0) {
+        currentPlayer.score += 1
+        io.to(data.roomId).emit('combat', `${otherPlayer.field.name} et KO`)
+        otherPlayer.field = null
+      }
+
+      if (currentPlayer.score === 3) {
+        io.to(data.roomId).emit(
+          'gameEnded',
+          `Fin du jeu victoire de ${currentPlayer.email} 3 points à ${otherPlayer.score}`,
+        )
+        return games.splice(
+          games.findIndex((game: Game) => game.gameId === data.roomId),
+          1,
+        )
+      }
+
+      game.currentPlayerSocketId = otherPlayer.socketId
+      gameState(game)
+      return io
+        .to(String(game.currentPlayerSocketId))
+        .emit('Turn', "C'est à vous de jouer")
+    })
+
+    /**
+     * Permet de terminer le tour
+     */
+    socket.on('endTurn', async (data: { roomId: string }) => {
+      const infos = gameAndTurn(data.roomId)
+
+      if (!infos || typeof infos === 'boolean') {
+        return
+      }
+
+      const { game, otherPlayer } = infos
+
+      game.currentPlayerSocketId = otherPlayer.socketId
+
+      gameState(game)
+      return io
+        .to(String(game.currentPlayerSocketId))
+        .emit('Turn', "C'est à vous de jouer")
+    })
+
+    /**
+     * Vérifie la partie et le tour du joueur
+     * @param {string} roomId - id de la room
+     * @returns { game: Game, currentPlayer: Player, otherPlayer: Player } La partie, le joueur actif et l'autre jouer
+     */
+    function gameAndTurn(roomId: string): {
+      game: Game
+      currentPlayer: Player
+      otherPlayer: Player
+    } {
+      const game = games.find((game: Game) => game.gameId === roomId)
+      if (!game) {
+        return socket.emit('error', 'Partie introuvable')
+      }
+
+      let currentPlayer: Player
+      let otherPlayer: Player
+
+      if (socket.user.userId === game.player1.playerId) {
+        currentPlayer = game.player1
+        otherPlayer = game.player2
+      } else if (socket.user.userId === game.player2.playerId) {
+        currentPlayer = game.player2
+        otherPlayer = game.player1
+      } else {
+        return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
+      }
+
+      if (game.currentPlayerSocketId !== currentPlayer.socketId) {
+        return socket.emit('error', "Ce n'est pas votre tour")
+      }
+
+      return { game, currentPlayer, otherPlayer }
+    }
+
+    /**
+     * Met en page les cartes pour l'affichage
+     * @param {Card[] | Card | null} tabCards - Les cartes à mettre en page
+     * @returns la liste des carte mise en page
+     */
+    function cardsLabel(tabCards: Card[] | Card | null) {
+      // field vide
+      if (tabCards === null) {
+        return null
+      }
+
+      // hand
+      if (Array.isArray(tabCards)) {
+        return tabCards.map((carte) => ({
+          nom_du_pokemon: carte.name,
+          hp: carte.hp,
+          attaque: carte.attack,
+          type: carte.type,
+        }))
+      }
+
+      // field
+      return {
+        nom_du_pokemon: tabCards.name,
+        hp: tabCards.hp,
+        attaque: tabCards.attack,
+        type: tabCards.type,
+      }
+    }
+
+    /**
+     * Permet la gestion sécurisé des messages vers les joueurs
+     * @param {Game} game - La partie
+     * @param {string | null} message - Un message si différent de gameStateUpdated
+     */
+    function gameState(game: Game, message: string | null) {
+      const messageEmit: string = message || 'gameStateUpdated'
+
+      // Joueur 1
+      io.to(String(game.player1.socketId)).emit(messageEmit, {
+        vous: {
+          main: cardsLabel(game.player1.hand),
+          terrain: cardsLabel(game.player1.field),
+          score: game.player1.score,
+        },
+        'votre adversaire': {
+          nombre_carte_en_main: game.player2.hand.length,
+          terrain: cardsLabel(game.player2.field),
+          score: game.player2.score,
+        },
+        currentPlayerSocketId: game.currentPlayerSocketId,
+      })
+
+      if (messageEmit === 'gameStarted') {
+        io.to(String(game.player1.socketId)).emit(
+          messageEmit,
+          "C'est à vous de commencer",
+        )
+      }
+
+      // Joueur 2
+      io.to(String(game.player2.socketId)).emit(messageEmit, {
+        vous: {
+          main: cardsLabel(game.player2.hand),
+          terrain: cardsLabel(game.player2.field),
+          score: game.player2.score,
+        },
+        'votre adversaire': {
+          nombre_carte_en_main: game.player1.hand.length,
+          terrain: cardsLabel(game.player1.field),
+          score: game.player1.score,
+        },
+        currentPlayerSocketId: game.currentPlayerSocketId,
+      })
+    }
   })
 }
