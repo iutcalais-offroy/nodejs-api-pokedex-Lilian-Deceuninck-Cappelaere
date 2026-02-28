@@ -25,7 +25,7 @@ interface Game {
   gameId: string
   player1: Player
   player2: Player
-  turn: string
+  currentPlayerSocketId: string
 }
 
 // Fonction pour mélanger le deck
@@ -55,7 +55,9 @@ export const matchMaking = (io: Server) => {
         const nameCard = deck.cards.map((carte: string) => carte.card.name)
 
         // mélange des cartes
-        const cards = shuffle(deck.cards.map((carte: Card) => carte.card))
+        const cards = shuffle(
+          deck.cards.map((carte: Card) => ({ ...carte.card })),
+        )
 
         const player1: Player = {
           socketId: socket.id,
@@ -128,7 +130,9 @@ export const matchMaking = (io: Server) => {
           socket.emit('error', 'Vous ne pouvez pas rejoindre votre propre room')
         } else {
           // mélange des cartes
-          const cards = shuffle(deck.cards.map((carte: Card) => carte.card))
+          const cards = shuffle(
+            deck.cards.map((carte: Card) => ({ ...carte.card })),
+          )
 
           const player2: Player = {
             socketId: socket.id,
@@ -154,7 +158,7 @@ export const matchMaking = (io: Server) => {
               gameId: data.roomId,
               player1: player1,
               player2: player2,
-              turn: player1.email,
+              currentPlayerSocketId: player1.socketId,
             }
             games.push(newGame)
 
@@ -171,7 +175,7 @@ export const matchMaking = (io: Server) => {
 
             io.to(data.roomId).emit(
               'gameStarted',
-              `La partie entre ${player1.email} et ${player2.email} commence au tour de ${newGame.turn}`,
+              `La partie entre ${player1.email} et ${player2.email} commence au tour de ${newGame.currentPlayerSocketId}`,
             )
 
             gameState(newGame, 'gameStarted')
@@ -192,27 +196,13 @@ export const matchMaking = (io: Server) => {
     })
 
     socket.on('drawCards', async (data: { roomId: string }) => {
-      const game = games.find((game: Game) => game.gameId === data.roomId)
-      if (!game) {
-        return socket.emit('error', 'Partie introuvable')
+      const infos = gameAndTurn(data.roomId)
+
+      if (!infos || typeof infos === 'boolean') {
+        return
       }
 
-      let currentPlayer: Player
-      let playerEmail: string
-
-      if (socket.user.userId === game.player1.playerId) {
-        currentPlayer = game.player1
-        playerEmail = game.player1.email
-      } else if (socket.user.userId === game.player2.playerId) {
-        currentPlayer = game.player2
-        playerEmail = game.player2.email
-      } else {
-        return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
-      }
-
-      if (game.turn !== playerEmail) {
-        return socket.emit('error', "Ce n'est pas votre tour")
-      }
+      const { game, currentPlayer } = infos
 
       if (currentPlayer.hand.length === 5) {
         return socket.emit('error', 'Vous avez déjà 5 cartes')
@@ -224,7 +214,7 @@ export const matchMaking = (io: Server) => {
         if (card) {
           currentPlayer.hand.push(card)
         } else {
-          return socket.emit('error')
+          return
         }
       }
 
@@ -234,27 +224,13 @@ export const matchMaking = (io: Server) => {
     socket.on(
       'playCard',
       async (data: { roomId: string; cardIndex: number }) => {
-        const game = games.find((game: Game) => game.gameId === data.roomId)
-        if (!game) {
-          return socket.emit('error', 'Partie introuvable')
+        const infos = gameAndTurn(data.roomId)
+
+        if (!infos || typeof infos === 'boolean') {
+          return
         }
 
-        let currentPlayer: Player
-        let playerEmail: string
-
-        if (socket.user.userId === game.player1.playerId) {
-          currentPlayer = game.player1
-          playerEmail = game.player1.email
-        } else if (socket.user.userId === game.player2.playerId) {
-          currentPlayer = game.player2
-          playerEmail = game.player2.email
-        } else {
-          return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
-        }
-
-        if (game.turn !== playerEmail) {
-          return socket.emit('error', "Ce n'est pas votre tour")
-        }
+        const { game, currentPlayer } = infos
 
         if (currentPlayer.field !== null) {
           return socket.emit('error', 'Il y a déjà une carte sur votre terrain')
@@ -275,30 +251,13 @@ export const matchMaking = (io: Server) => {
     )
 
     socket.on('attack', async (data: { roomId: string }) => {
-      const game = games.find((game: Game) => game.gameId === data.roomId)
-      if (!game) {
-        return socket.emit('error', 'Partie introuvable')
+      const infos = gameAndTurn(data.roomId)
+
+      if (!infos || typeof infos === 'boolean') {
+        return
       }
 
-      let currentPlayer: Player
-      let playerEmail: string
-      let otherPlayer: Player
-
-      if (socket.user.userId === game.player1.playerId) {
-        currentPlayer = game.player1
-        playerEmail = game.player1.email
-        otherPlayer = game.player2
-      } else if (socket.user.userId === game.player2.playerId) {
-        currentPlayer = game.player2
-        playerEmail = game.player2.email
-        otherPlayer = game.player1
-      } else {
-        return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
-      }
-
-      if (game.turn !== playerEmail) {
-        return socket.emit('error', "Ce n'est pas votre tour")
-      }
+      const { game, currentPlayer, otherPlayer } = infos
 
       if (currentPlayer.field === null) {
         return socket.emit('error', "Il n'y a aucune carte sur votre terrain")
@@ -337,41 +296,60 @@ export const matchMaking = (io: Server) => {
         )
         return games.splice(
           games.findIndex((game: Game) => game.gameId === data.roomId),
+          1,
         )
       }
 
-      game.turn = otherPlayer.email
-
-      return gameState(game)
+      game.currentPlayerSocketId = otherPlayer.socketId
+      gameState(game)
+      return io
+        .to(String(game.currentPlayerSocketId))
+        .emit('Turn', "C'est à vous de jouer")
     })
 
     socket.on('endTurn', async (data: { roomId: string }) => {
-      const game = games.find((game: Game) => game.gameId === data.roomId)
+      const infos = gameAndTurn(data.roomId)
+
+      if (!infos || typeof infos === 'boolean') {
+        return
+      }
+
+      const { game, otherPlayer } = infos
+
+      game.currentPlayerSocketId = otherPlayer.socketId
+
+      gameState(game)
+      return io
+        .to(String(game.currentPlayerSocketId))
+        .emit('Turn', "C'est à vous de jouer")
+    })
+
+    // Vérifie la partie et le tour du joueur
+    function gameAndTurn(roomId: string) {
+      const game = games.find((game: Game) => game.gameId === roomId)
       if (!game) {
         return socket.emit('error', 'Partie introuvable')
       }
 
-      let playerEmail: string
+      let currentPlayer: Player
       let otherPlayer: Player
 
       if (socket.user.userId === game.player1.playerId) {
-        playerEmail = game.player1.email
+        currentPlayer = game.player1
         otherPlayer = game.player2
       } else if (socket.user.userId === game.player2.playerId) {
-        playerEmail = game.player2.email
+        currentPlayer = game.player2
         otherPlayer = game.player1
       } else {
         return socket.emit('error', "Vous n'êtes pas joueur à cette partie")
       }
 
-      if (game.turn !== playerEmail) {
+      if (game.currentPlayerSocketId !== currentPlayer.socketId) {
         return socket.emit('error', "Ce n'est pas votre tour")
       }
 
-      game.turn = otherPlayer.email
-
-      return gameState(game)
-    })
+      return { game, currentPlayer, otherPlayer }
+    }
 
     function cardsLabel(tabCards: Card[] | Card | null) {
       // field vide
@@ -413,8 +391,15 @@ export const matchMaking = (io: Server) => {
           terrain: cardsLabel(game.player2.field),
           score: game.player2.score,
         },
-        tour: `tour du joueur ${game.turn}`,
+        tour: `tour du joueur ${game.currentPlayerSocketId}`,
       })
+
+      if (messageEmit === 'gameStarted') {
+        io.to(String(game.player1.socketId)).emit(
+          messageEmit,
+          "C'est à vous de commencer",
+        )
+      }
 
       // Joueur 2
       io.to(String(game.player2.socketId)).emit(messageEmit, {
@@ -428,7 +413,7 @@ export const matchMaking = (io: Server) => {
           terrain: cardsLabel(game.player1.field),
           score: game.player1.score,
         },
-        tour: `tour du joueur ${game.turn}`,
+        tour: `tour du joueur ${game.currentPlayerSocketId}`,
       })
     }
   })
