@@ -10,6 +10,7 @@ import swaggerUi from 'swagger-ui-express'
 import { swaggerDocument } from './docs'
 import { Server } from 'socket.io'
 import { socketMiddleware } from './socket/socket.middleware'
+import { matchMaking } from './socket/socket.match'
 
 // Create Express app
 export const app = express()
@@ -54,6 +55,8 @@ if (require.main === module) {
   })
 
   io.use(socketMiddleware)
+
+  matchMaking(io)
 
   // Start server
   try {
