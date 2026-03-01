@@ -1,9 +1,5 @@
 import YAML from 'yamljs'
 import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 // Charger la configuration principale
 const swaggerConfig = YAML.load(path.join(__dirname, 'swagger.config.yml'))
